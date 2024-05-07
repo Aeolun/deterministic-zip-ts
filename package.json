@@ -1,20 +1,34 @@
 {
-  "name": "deterministic-zip",
+  "name": "deterministic-zip-ts",
   "version": "1.1.0",
   "description": "A ZIP library that generates the same zip file from the same files every time",
   "files": [
-    "index.js"
+    "dist/**/*"
   ],
-  "main": "index.js",
+  "scripts": {
+    "build": "tsc && tsc -p tsconfig.module.json",
+    "test": "vitest"
+  },
+  "main": "dist/cjs/index.js",
+  "module": "dist/esm/index.mjs",
+  "types": "dist/types/index.d.ts",
   "repository": {
-    "url": "git@github.com:bitgenics/deterministic-zip.git",
+    "url": "git@github.com:aeolun/deterministic-zip-ts.git",
     "type": "git"
   },
-  "author": "Erwin van der Koogh <erwin@bitgenics.io>",
+  "authors": [
+    "Bart Riepe <bart@serial-expermiments.com>",
+    "Erwin van der Koogh <erwin@bitgenics.io>"
+  ],
   "license": "MIT",
   "dependencies": {
-    "async": "^3.1.0",
-    "crc32-stream": "^3.0.0",
-    "minimatch": "^3.0.3"
+    "crc32-stream": "^6.0.0",
+    "minimatch": "^9.0.4"
+  },
+  "devDependencies": {
+    "@types/crc32-stream": "^4.0.3",
+    "@types/node": "^20.12.10",
+    "typescript": "^5.4.5",
+    "vitest": "^1.6.0"
   }
 }

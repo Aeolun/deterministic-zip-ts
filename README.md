@@ -1,27 +1,25 @@
-# deterministic-zip
+# deterministic-zip-ts
 
-Regular zip binaries and libraries often generate different zip files from the same files most often because of metadata or timestamps. Deterministic-zip guarantees to always generate the same zip file every time.
+> [!NOTE] 
+> Based on the original [deterministic-zip](https://github.com/bitgenics/deterministic-zip) by Erwin van der Koogh. Which works fine, but I needed something that I had control over, and I like Typescript, and async.
+
+Regular zip binaries and libraries often generate different zip files from the same files most often because of metadata or timestamps. `deterministic-zip-ts` guarantees to always generate the same zip file every time.
 
 This is a major problem when creating a reproducible build. The output from two builds from identical source would generate two different zip files.
 
-With deterministic-zip you are guaranteed to get the exact same file every time you build from the same input.
-
-# Usage
+With `deterministic-zip-ts` you are guaranteed to get the exact same file every time you build from the same input.
 
 ## Install
 
-`npm install deterministic-zip --save`
+`npm install deterministic-zip-ts --save`
 
-## Zip
+## Usage
 
 ```javascript
-const zip = require('deterministic-zip');
+import { zip } from 'deterministic-zip-ts';
 
-zip('data', 'test.zip', {includes: ['./index.js', './src/**'], cwd: 'data'}, (err) => {
-    console.log('Done!');
+await zip('data', 'test.zip', {
+    includes: ['./index.js', './src/**'], 
+    cwd: 'data'
 });
 ```
-
-## Warning
-
-This is a very new library. I use it myself, but it has not been extensively test across multiple platforms, especially Windows. 

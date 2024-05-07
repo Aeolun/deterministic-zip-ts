@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "target": "esnext",
+    "moduleResolution": "node",
+    "module": "commonjs",
+    "strict": true,
+    "declaration": true,
+    "isolatedModules": true,
+    "skipLibCheck": true,
+    "types": ["node"],
+    "outDir": "dist/cjs/",
+    "declarationDir": "dist/types/",
+    "rootDir": "src"
+  },
+  "include": ["src/**/*"],
+  "exclude": ["src/tests/**/*"]
+}
