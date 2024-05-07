@@ -1,6 +1,6 @@
 {
   "name": "deterministic-zip-ts",
-  "version": "1.1.2",
+  "version": "1.1.3",
   "description": "A ZIP library that generates the same zip file from the same files every time",
   "files": [
     "dist/**/*"
@@ -9,7 +9,7 @@
     "build": "tsc && tsc -p tsconfig.module.json",
     "test": "vitest"
   },
-  "type": "module",
+  "type": "commonjs",
   "main": "dist/cjs/index.js",
   "module": "dist/esm/index.mjs",
   "types": "dist/types/index.d.ts",
@@ -25,14 +25,14 @@
   "dependencies": {
     "crc32-stream": "^6.0.0",
     "minimatch": "^9.0.4",
-    "p-queue-multi": "^8.0.1"
+    "p-queue-multi": "^8.0.2"
   },
   "devDependencies": {
-    "deterministic-zip": "^1.1.0",
     "@types/crc32-stream": "^4.0.3",
     "@types/node": "^20.12.10",
+    "deterministic-zip": "^1.1.0",
+    "tsx": "^4.9.3",
     "typescript": "^5.4.5",
-    "vitest": "^1.6.0",
-    "tsx": "^4.9.3"
+    "vitest": "^1.6.0"
   }
 }

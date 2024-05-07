@@ -15,8 +15,8 @@ importers:
         specifier: ^9.0.4
         version: 9.0.4
       p-queue-multi:
-        specifier: ^8.0.1
-        version: 8.0.1
+        specifier: ^8.0.2
+        version: 8.0.2
     devDependencies:
       '@types/crc32-stream':
         specifier: ^4.0.3
@@ -494,8 +494,8 @@ packages:
     resolution: {integrity: sha512-/Eaoq+QyLSiXQ4lyYV23f14mZRQcXnxfHrN0vCai+ak9G0pp9iEQukIIZq5NccEvwRB8PUnZT0KsOoDCINS1qQ==}
     engines: {node: '>=18'}
 
-  p-queue-multi@8.0.1:
-    resolution: {integrity: sha512-NJGqSp4ajdBYgl+KwPBT/aDjN1J9PZ3YqaH1g0JRe4s9He8Mf9jmOWrSpDjE2PM1qiRFpAsGmaYAQf89Zf0pcQ==}
+  p-queue-multi@8.0.2:
+    resolution: {integrity: sha512-s7JYJwbXQHjK28YER2UPGwgFDRBV4WN/xwlG09QDAkqQNF4jLcu//Eftgb2waf2FhdUnYvWwQRyr2j1Y7IcioQ==}
     engines: {node: '>=18'}
 
   p-timeout@6.1.2:
@@ -1077,7 +1077,7 @@ snapshots:
     dependencies:
       yocto-queue: 1.0.0
 
-  p-queue-multi@8.0.1:
+  p-queue-multi@8.0.2:
     dependencies:
       eventemitter3: 5.0.1
       p-timeout: 6.1.2
