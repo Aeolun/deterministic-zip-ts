@@ -38,4 +38,10 @@ jspm_packages
 
 # Optional REPL history
 .node_repl_history
+
+# Temporary files
 dist
+cache
+
+# Do not accidentally commit the massive manyfiles directory
+src/tests/examples/manyfiles/data

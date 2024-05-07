@@ -1,14 +1,16 @@
 import * as fs from "node:fs/promises";
 import {FileHandle} from "node:fs/promises";
 import {DeflateCRC32Stream} from "crc32-stream";
-import {ExtendedStats, Options} from "./types";
-import {getFiles} from "./files";
+import {ExtendedStats, Options} from "./types.js";
+import {getFiles} from "./files.js";
+import PQueue from 'p-queue-multi';
+import * as os from "node:os";
 
 const allocateBuffer = (size: number) => {
 	return Buffer.alloc(size, 0);
 }
 
-const fromBuffer = (string: string) => {
+const bufferFromString = (string: string) => {
 	return Buffer.from(string, 'utf8');
 }
 
@@ -43,8 +45,13 @@ class Zipfile {
 	fileCentralDirTempl: Buffer;
 	numberOfFiles: number;
 	directoryOffset: number;
+	stats: {
+		timeDeflating: number;
+		timeReading: number;
+		timeWriting: number;
+	}
 
-	constructor(files: ExtendedStats[], zipfile: string) {
+	constructor(files: ExtendedStats[], zipfile: string, private options: Options) {
 		this.index = 0;
 		files.sort((a: ExtendedStats, b: ExtendedStats) => {
 			return a.relativePath.localeCompare(b.relativePath);
@@ -55,6 +62,11 @@ class Zipfile {
 		this.fileCentralDirTempl = initFileCentralDirTempl();
 		this.numberOfFiles = 0;
 		this.directoryOffset = 0;
+		this.stats = {
+			timeDeflating: 0,
+			timeReading: 0,
+			timeWriting: 0
+		}
 	}
 
 	async #write(buffer: Buffer) {
@@ -67,69 +79,71 @@ class Zipfile {
 	}
 
 	#getHeaderBuffers(file: ExtendedStats) {
-		const headerTempl = this.fileheaderTempl;
-		const filenameBuffer = fromBuffer(file.relativePath);
+		const headerTempl = Buffer.from(this.fileheaderTempl);
+		const filenameBuffer = bufferFromString(file.relativePath);
 		headerTempl.writeInt16LE(filenameBuffer.length, 26);
 		return [headerTempl, filenameBuffer]
 	}
 
-	async #writeFileHeader(file: ExtendedStats) {
-		const fileheaderBuffers = this.#getHeaderBuffers(file);
+	async #writeFileHeader(fileheaderBuffers: Buffer[]) {
 		for(const buffer of fileheaderBuffers) {
 			await this.#write(buffer)
 		}
 	}
 
-	async #writeDataDescriptor(file: ExtendedStats) {
+	#getDataDescriptor(file: ExtendedStats) {
 		const dataDescriptor = allocateBuffer(16)
 		dataDescriptor.writeInt32LE(0x08074b50, 0); //signature
 		if (!file.checksum && file.size > 0) {
 			throw new Error("Checksum undefined")
 		}
-		dataDescriptor.writeUIntLE(Buffer.alloc(4, 0).readUIntLE(0, 4), 4, 4); //crc-32
+		dataDescriptor.writeUInt32LE(Buffer.alloc(4, 0).readUIntLE(0, 4), 4); //crc-32
 		dataDescriptor.writeInt32LE(file.compressedSize ?? 0, 8); //compressed size
 		dataDescriptor.writeInt32LE(file.uncompressedSize ?? 0, 12); //uncompressed size
-		await this.#write(dataDescriptor);
+		return dataDescriptor;
 	}
 
-	async #writeEntry(file: ExtendedStats) {
-
-		return new Promise<boolean>(async (resolve, reject) => {
-			file.headerOffset = this.index;
-			if(file.isFile()) {
+	async #getEntry(file: ExtendedStats): Promise<undefined> {
+		return new Promise<undefined>(async (resolve, reject) => {
+			if(file.isFile) {
 				this.numberOfFiles++
-				await this.#writeFileHeader(file);
+
+				const readingStart = Date.now();
 				const readStream = await fs.readFile(file.absolutePath);
+				this.stats.timeReading += Date.now() - readingStart;
+
+				const deflatingStart = Date.now();
 				const checksum = new DeflateCRC32Stream();
+				const datas: Buffer[] = []
+
+				checksum.on('data', (data) => {
+					datas.push(data)
+				});
 				checksum.on('end', async () => {
+					this.stats.timeDeflating += Date.now() - deflatingStart;
 					file.checksum = checksum.digest().readUIntBE(0, 4);
 					file.uncompressedSize = checksum.size();
 					file.compressedSize = checksum.size(true);
-					this.index += checksum.size(true); //add uncompressed size to index
-					try {
-						await this.#writeDataDescriptor(file)
-					} catch(error) {
-						reject(error)
-					}
 
-					resolve(true)
+
+					file.data = {
+						headers: this.#getHeaderBuffers(file),
+						data: Buffer.concat(datas),
+						footer: this.#getDataDescriptor(file),
+					}
+					resolve(undefined);
 				})
-				if (!this.outputStream) {
-					throw new Error("Output stream not initialized")
-				}
-				checksum.pipe(this.outputStream.createWriteStream(), {end: false});
-				checksum.write(readStream)
-				checksum.end();
+				checksum.end(readStream);
 			} else {
-				return resolve(true);
+				return resolve(undefined);
 			}
 		});
 	}
 
 	async #writeDirectoryEntry(file: ExtendedStats) {
-		if(!file.isDirectory() ) {
-			const directoryTempl = this.fileCentralDirTempl;
-			const filenameBuffer = fromBuffer(file.relativePath)
+		if(!file.isDirectory) {
+			const directoryTempl = Buffer.from(this.fileCentralDirTempl);
+			const filenameBuffer = bufferFromString(file.relativePath)
 			if (!file.checksum && file.size > 0) {
 				throw new Error("Directory checksum undefined")
 			}
@@ -148,27 +162,81 @@ class Zipfile {
 	async #writeEndRecord() {
 		const directorySize = this.index - this.directoryOffset;
 		const endRecord = allocateBuffer(22);
-		endRecord.writeInt32LE(0x06054b50, 0)
-		endRecord.writeInt16LE(this.numberOfFiles, 8); //entries on disk
-		endRecord.writeInt16LE(this.numberOfFiles, 10); //total entries
-		endRecord.writeInt32LE(directorySize, 12); //size directory
-		endRecord.writeInt32LE(this.directoryOffset, 16); //directory offset
+		if (this.numberOfFiles <= 65536) {
+			endRecord.writeInt32LE(0x06054b50, 0)
+			endRecord.writeUInt16LE(this.numberOfFiles, 8); //entries on disk
+			endRecord.writeUInt16LE(this.numberOfFiles, 10); //total entries
+			endRecord.writeUInt32LE(directorySize, 12); //size directory
+			endRecord.writeUInt32LE(this.directoryOffset, 16); //directory offset
+		} else {
+			// we are going to need the zip64 extension here
+			endRecord.writeInt32LE(0x06054b50, 0)
+			endRecord.writeUInt16LE(0xffff, 4); //number of this disk
+			endRecord.writeUInt16LE(0xffff, 6); //disk where central dir starts
+			endRecord.writeUInt16LE(0xffff, 8); //entries on disk
+			endRecord.writeUInt16LE(0xffff, 10); //total entries
+			endRecord.writeUInt32LE(0xffffffff, 12); //size directory
+			endRecord.writeUInt32LE(0xffffffff, 16); //directory offset
+		}
 		await this.#write(endRecord);
+
+		if (this.numberOfFiles > 65536) {
+			const zip64End = allocateBuffer(56);
+			zip64End.writeInt32LE(0x06064b50, 0);
+			zip64End.writeUInt32LE(44, 4); //size of zip64 end of central directory record
+			zip64End.writeUInt16LE(45, 12); //version made by
+			zip64End.writeUInt16LE(45, 14); //version needed to extract
+			zip64End.writeUInt32LE(0, 16); //number of this disk
+			zip64End.writeUInt32LE(0, 20); //disk where central directory starts
+			zip64End.writeUInt32LE(this.numberOfFiles, 24); //entries on disk
+			zip64End.writeUInt32LE(this.numberOfFiles, 32); //total entries
+			zip64End.writeUInt32LE(directorySize, 40); //size of central directory
+			zip64End.writeUInt32LE(this.directoryOffset, 48); //central directory offset
+			await this.#write(zip64End);
+		}
 	}
 
 	async zip() {
+		// not sure why using more cpu's than the system has is a good idea, but it's much faster
+		const queue = new PQueue({concurrency: os.cpus().length * 2});
+
+		const interval = setInterval(() => {
+			this.options.onProgress?.(queue.size, this.fileObjects.length)
+		}, 1000)
+
 		for (const file of this.fileObjects) {
-			await this.#writeEntry(file)
+			queue.add(async () => {
+				await this.#getEntry(file)
+			})
 		}
+
+		// write all entries to the zip file
+		await queue.onIdle();
+		clearInterval(interval)
+
+		const writingStart = Date.now();
+		// write the directory entries
+		for(const file of this.fileObjects) {
+			if (file.data) {
+				// headerOffset is later used for writing directory entries
+				file.headerOffset = this.index;
+				await this.#writeFileHeader(file.data.headers);
+				await this.#write(file.data.data);
+				await this.#write(file.data.footer);
+
+			}
+		}
+
 		this.directoryOffset = this.index;
-		for (const file of this.fileObjects) {
-			await this.#writeDirectoryEntry(file);
+		for (const entry of this.fileObjects) {
+			await this.#writeDirectoryEntry(entry);
 		}
 		await this.#writeEndRecord();
 		if (!this.outputStream) {
 			throw new Error("Output stream not initialized")
 		}
 		await this.outputStream.close()
+		this.stats.timeWriting = Date.now() - writingStart;
 	}
 }
 
@@ -177,8 +245,9 @@ const zip = async (dir: string, destination: string, options: Options) => {
 	options.excludes = options.excludes ?? ['.git', 'CVS', '.svn', '.hg', '.lock-wscript', '.wafpickle-N', '*.swp', '.DS_Store', '._*', 'npm-debug.log']
 	options.cwd = options.cwd || '.';
 	const files = await getFiles(dir, options)
-	const zipfile = new Zipfile(files, destination);
+	const zipfile = new Zipfile(files, destination, options);
 	await zipfile.zip();
+	return zipfile.stats;
 }
 
 export {zip}

@@ -9,6 +9,14 @@ This is a major problem when creating a reproducible build. The output from two 
 
 With `deterministic-zip-ts` you are guaranteed to get the exact same file every time you build from the same input.
 
+## Features
+
+- Now supports async/await
+- Supports zip archives with more than 65k files
+- Always returns a zip with the exact same hash for files with the same content
+- Compresses in parallel, which is somehow faster than native zip (on the machine I tested it with)
+- Does **not** support files larger than 4GB
+
 ## Install
 
 `npm install deterministic-zip-ts --save`

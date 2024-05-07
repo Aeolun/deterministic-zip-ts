@@ -1,5 +1,4 @@
-import {ExtendedStats, Options} from "./types";
-import {Stats} from "node:fs";
+import {ExtendedStats, Options} from "./types.js";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import {minimatch} from "minimatch";
@@ -19,20 +18,27 @@ const shouldInclude2 = (file: string, options: Options) => {
         return false
     }
 }
-const addDir = async (list: Stats[], options: Options, dir: string) => {
+const addDir = async (list: ExtendedStats[], options: Options, dir: string) => {
     const files = await fs.readdir(dir);
     const dirs = []
     for (const elem of files) {
         const file = dir + '/' + elem;
-        const info = await fs.stat(file) as ExtendedStats;
-        info.relativePath = path.relative(options.cwd ?? '.', file);
-        const check = info.isDirectory() ? info.relativePath + '/' : info.relativePath;
+        const stats = await fs.stat(file);
+        const info: ExtendedStats = {
+            isFile: stats.isFile(),
+            isDirectory: stats.isDirectory(),
+            size: stats.size,
+            relativePath: path.relative(options.cwd ?? '.', file),
+            filename: '',
+            absolutePath: ''
+        }
+        const check = info.isDirectory ? info.relativePath + '/' : info.relativePath;
         if (shouldInclude2(check, options)) {
             info.filename = elem
             info.absolutePath = path.resolve(file);
             list.push(info);
         }
-        if (info.isDirectory()) {
+        if (info.isDirectory) {
             dirs.push(file);
         }
     }
