@@ -121,7 +121,7 @@ class Zipfile {
 				checksum.write(readStream)
 				checksum.end();
 			}
-			return false;
+			return resolve(true);
 		});
 	}
 

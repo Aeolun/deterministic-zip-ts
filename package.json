@@ -1,6 +1,6 @@
 {
   "name": "deterministic-zip-ts",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "A ZIP library that generates the same zip file from the same files every time",
   "files": [
     "dist/**/*"
