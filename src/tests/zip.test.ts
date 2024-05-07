@@ -4,6 +4,7 @@ import {mkdtemp} from "node:fs/promises";
 import * as fs from "node:fs/promises";
 import {createHash} from "node:crypto";
 import {Options} from "../types";
+// import zipOriginal from 'deterministic-zip';
 
 test("it zips three files the same way every time", async () => {
     const tmpDir = await mkdtemp('dttest_')
@@ -76,3 +77,45 @@ test("it zips directories too", async () => {
         });
     }
 })
+
+// test("it zips three files the same way as the original", async () => {
+//     const tmpDir = await mkdtemp('dttest_')
+//     const origTmpFile = tmpDir+'/orig_test.zip'
+//     const tmpFile = tmpDir+'/test.zip'
+//
+//     const dir = 'src/tests/examples/simple/data/'
+//     const options: Options = {
+//         includes: ['*'],
+//         excludes: [],
+//         cwd: 'src/tests/examples/simple/data/'
+//     }
+//
+//     await zip(dir, origTmpFile, options);
+//     await new Promise((resolve, reject) => {
+//         zipOriginal(dir, tmpFile, options, (err) => {
+//             if(err) {
+//                 reject(err);
+//             } else {
+//                 resolve(true);
+//             }
+//         });
+//     });
+//
+//     const firstArchive = await fs.readFile(origTmpFile)
+//     const secondArchive = await fs.readFile(tmpFile)
+//
+//     const firstHash = createHash('md5').update(firstArchive).digest().toString('hex')
+//     const secondHash = createHash('md5').update(secondArchive).digest().toString('hex')
+//
+//     try {
+//         expect(firstArchive).toEqual(secondArchive)
+//         expect(firstHash).toEqual(secondHash)
+//     } catch(e) {
+//         throw e;
+//     } finally {
+//         // await fs.rm(tmpDir, {
+//         //     recursive: true,
+//         //     force: true
+//         // });
+//     }
+// })

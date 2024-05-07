@@ -120,8 +120,9 @@ class Zipfile {
 				checksum.pipe(this.outputStream.createWriteStream(), {end: false});
 				checksum.write(readStream)
 				checksum.end();
+			} else {
+				return resolve(true);
 			}
-			return resolve(true);
 		});
 	}
 
