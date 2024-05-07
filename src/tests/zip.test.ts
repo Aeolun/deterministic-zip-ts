@@ -7,8 +7,8 @@ import {Options} from "../types";
 
 test("it zips three files the same way every time", async () => {
     const tmpDir = await mkdtemp('dttest_')
-    const origTmpFile = tmpDir+'/orig_test.zip'
-    const tmpFile = tmpDir+'/test.zip'
+    const origTmpFile = tmpDir+'/three.zip'
+    const tmpFile = tmpDir+'/three2.zip'
 
     const dir = 'src/tests/examples/simple/data/'
     const options: Options = {
@@ -20,6 +20,7 @@ test("it zips three files the same way every time", async () => {
     await zip(dir, origTmpFile, options);
     await zip(dir, tmpFile, options);
 
+    const staticArchive = await fs.readFile('src/tests/examples/simple/three.zip')
     const firstArchive = await fs.readFile(origTmpFile)
     const secondArchive = await fs.readFile(tmpFile)
 
@@ -27,6 +28,7 @@ test("it zips three files the same way every time", async () => {
     const secondHash = createHash('md5').update(secondArchive).digest().toString('hex')
 
     try {
+        expect(firstArchive).toEqual(staticArchive);
         expect(firstArchive).toEqual(secondArchive)
         expect(firstHash).toEqual(secondHash)
     } catch(e) {
@@ -41,8 +43,8 @@ test("it zips three files the same way every time", async () => {
 
 test("it zips directories too", async () => {
     const tmpDir = await mkdtemp('dttest_')
-    const origTmpFile = tmpDir+'/orig_test.zip'
-    const tmpFile = tmpDir+'/test.zip'
+    const origTmpFile = tmpDir+'/directory.zip'
+    const tmpFile = tmpDir+'/directory2.zip'
 
     const dir = 'src/tests/examples/simple/data/'
     const options: Options = {
@@ -54,6 +56,7 @@ test("it zips directories too", async () => {
     await zip(dir, origTmpFile, options);
     await zip(dir, tmpFile, options);
 
+    const staticArchive = await fs.readFile('src/tests/examples/simple/directory.zip')
     const firstArchive = await fs.readFile(origTmpFile)
     const secondArchive = await fs.readFile(tmpFile)
 
@@ -61,6 +64,7 @@ test("it zips directories too", async () => {
     const secondHash = createHash('md5').update(secondArchive).digest().toString('hex')
 
     try {
+        expect(firstArchive).toEqual(staticArchive);
         expect(firstArchive).toEqual(secondArchive)
         expect(firstHash).toEqual(secondHash)
     } catch(e) {
