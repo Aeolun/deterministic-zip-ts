@@ -141,6 +141,7 @@ test("it zips many, many small files", async () => {
     for (let i = 0; i < 70000; i++) {
         await fs.writeFile(dir + i + '.b', '0');
     }
+    console.log("Files created")
 
     try {
         await zip(dir, origTmpFile, options);

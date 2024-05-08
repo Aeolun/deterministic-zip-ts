@@ -1,6 +1,6 @@
 {
   "name": "deterministic-zip-ts",
-  "version": "1.1.3",
+  "version": "1.1.4",
   "description": "A ZIP library that generates the same zip file from the same files every time",
   "files": [
     "dist/**/*"
@@ -25,7 +25,7 @@
   "dependencies": {
     "crc32-stream": "^6.0.0",
     "minimatch": "^9.0.4",
-    "p-queue-multi": "^8.0.2"
+    "p-queue-multi": "^8.0.4"
   },
   "devDependencies": {
     "@types/crc32-stream": "^4.0.3",
