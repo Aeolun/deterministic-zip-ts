@@ -23,8 +23,8 @@ test("it zips three files the same way every time", async () => {
     }
 
     try {
-        await zip(dir, origTmpFile, options);
-        await zip(dir, tmpFile, options);
+        const results = await zip(dir, origTmpFile, options);
+        const results2 = await zip(dir, tmpFile, options);
 
         const staticArchive = await fs.readFile('src/tests/examples/simple/three.zip')
         const firstArchive = await fs.readFile(origTmpFile)
@@ -36,6 +36,18 @@ test("it zips three files the same way every time", async () => {
         expect(firstArchive).toEqual(staticArchive);
         expect(firstArchive).toEqual(secondArchive)
         expect(firstHash).toEqual(secondHash)
+
+        expect({
+            unzippedSize: results.unzippedSize,
+            zippedSize: results.zippedSize
+        }).toMatchObject({
+            unzippedSize: results2.unzippedSize,
+            zippedSize: results2.zippedSize
+        });
+        expect(results).toMatchObject({
+            unzippedSize: 414,
+            zippedSize: 354
+        })
     } catch(e) {
         throw e;
     } finally {

@@ -49,6 +49,8 @@ class Zipfile {
 		timeDeflating: number;
 		timeReading: number;
 		timeWriting: number;
+		unzippedSize: number;
+		zippedSize: number;
 	}
 
 	constructor(files: ExtendedStats[], zipfile: string, private options: Options) {
@@ -65,7 +67,9 @@ class Zipfile {
 		this.stats = {
 			timeDeflating: 0,
 			timeReading: 0,
-			timeWriting: 0
+			timeWriting: 0,
+			unzippedSize: 0,
+			zippedSize: 0
 		}
 	}
 
@@ -125,6 +129,8 @@ class Zipfile {
 					file.uncompressedSize = checksum.size();
 					file.compressedSize = checksum.size(true);
 
+					this.stats.unzippedSize += file.uncompressedSize;
+					this.stats.zippedSize += file.compressedSize;
 
 					file.data = {
 						headers: this.#getHeaderBuffers(file),
